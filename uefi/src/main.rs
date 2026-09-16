@@ -445,3 +445,20 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
         unsafe { asm!("cli; hlt") };
     }
 }
+
+/// Provide `wcslen` for the `uefi` crate which needs it for wide string
+/// handling (e.g. `FileInfo::from_uefi`). The `x86_64-unknown-uefi` target
+/// has no C runtime, so this must be supplied explicitly.
+///
+/// See: https://github.com/rust-osdev/bootloader/issues/579
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn wcslen(s: *const u16) -> usize {
+    let mut len = 0;
+    // SAFETY: caller guarantees `s` points to a null-terminated wide string.
+    unsafe {
+        while *s.add(len) != 0 {
+            len += 1;
+        }
+    }
+    len
+}
